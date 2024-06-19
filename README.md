@@ -1,0 +1,2 @@
+# maclang
+macro language

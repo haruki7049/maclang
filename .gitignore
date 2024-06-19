@@ -17,8 +17,3 @@ result
 
 # cargo-llvm-cov's result
 coverage/
-
-
-# Added by cargo
-
-/target

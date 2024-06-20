@@ -17,12 +17,14 @@
         src = ./.;
         buildInputs = with pkgs; [
           llvmPackages_16.llvm.dev
+          libffi
+          libxmlxx
         ];
         cargoArtifacts = craneLib.buildDepsOnly {
           inherit src buildInputs;
         };
         mcl = craneLib.buildPackage {
-          inherit src cargoArtifacts;
+          inherit src cargoArtifacts buildInputs;
           strictDeps = true;
 
           doCheck = true;
@@ -54,6 +56,8 @@
           packages = [
             rust
             pkgs.llvmPackages_16.llvm
+            pkgs.libffi
+            pkgs.libxmlxx
           ];
 
           env = {

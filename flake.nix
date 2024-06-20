@@ -48,9 +48,14 @@
         };
 
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
+          packages = [
             rust
+            pkgs.llvmPackages_16.llvm
           ];
+
+          env = {
+            LLVM_SYS_160_PREFIX = "${pkgs.llvmPackages_16.llvm.dev}";
+          };
 
           shellHook = ''
             export PS1="\n[nix-shell:\w]$ "

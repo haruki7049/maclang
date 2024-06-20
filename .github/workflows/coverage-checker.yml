@@ -15,7 +15,7 @@ jobs:
       - name: Install llvmenv
         run: cargo install llvmenv
       - name: Install llvm
-        run: llvmenv init && llvmenv build-entry 16.0.0
+        run: llvmenv init && llvmenv build-entry 16.0.6
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov

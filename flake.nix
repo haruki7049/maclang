@@ -15,8 +15,11 @@
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
         craneLib = (crane.mkLib pkgs).overrideToolchain rust;
         src = ./.;
+        buildInputs = with pkgs; [
+          llvmPackages_16.llvm.dev
+        ];
         cargoArtifacts = craneLib.buildDepsOnly {
-          inherit src;
+          inherit src buildInputs;
         };
         mcl = craneLib.buildPackage {
           inherit src cargoArtifacts;

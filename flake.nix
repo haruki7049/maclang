@@ -15,11 +15,16 @@
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
         craneLib = (crane.mkLib pkgs).overrideToolchain rust;
         src = ./.;
+        buildInputs = with pkgs; [
+          llvmPackages_16.llvm.dev
+          libffi
+          libxmlxx
+        ];
         cargoArtifacts = craneLib.buildDepsOnly {
-          inherit src;
+          inherit src buildInputs;
         };
         mcl = craneLib.buildPackage {
-          inherit src cargoArtifacts;
+          inherit src cargoArtifacts buildInputs;
           strictDeps = true;
 
           doCheck = true;
@@ -48,9 +53,16 @@
         };
 
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
+          packages = [
             rust
+            pkgs.llvmPackages_16.llvm
+            pkgs.libffi
+            pkgs.libxmlxx
           ];
+
+          env = {
+            LLVM_SYS_160_PREFIX = "${pkgs.llvmPackages_16.llvm.dev}";
+          };
 
           shellHook = ''
             export PS1="\n[nix-shell:\w]$ "

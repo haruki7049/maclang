@@ -8,14 +8,16 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Install Rust
         run: rustup update stable
 
-      - name: Install llvmenv
-        run: cargo install llvmenv
-      - name: Install llvm
-        run: llvmenv init && llvmenv build-entry 16.0.6
+      - name: Update apt repos
+        run: apt update
+      - name: Install LLVM 16
+        run: apt install llvm-16-dev
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov

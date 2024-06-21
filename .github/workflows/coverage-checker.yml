@@ -15,10 +15,10 @@ jobs:
       - name: Install Rust
         run: rustup update stable
 
-      - name: Update apt repos
-        run: sudo apt update
-      - name: Install LLVM 16
-        run: sudo apt install llvm-16-dev
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2.0.3
+        with:
+          version: "16.0.6"
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov

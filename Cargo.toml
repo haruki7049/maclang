@@ -1,6 +1,12 @@
 [package]
 name = "maclang"
+authors = ["haruki7049 <tontonkirikiri@gmail.com>"]
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/haruki7049/maclang"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

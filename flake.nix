@@ -1,77 +1,134 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    treefmt-nix.url = "github:numtide/treefmt-nix";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    systems.url = "github:nix-systems/default";
     crane.url = "github:ipetkov/crane";
+    flake-compat.url = "github:edolstra/flake-compat";
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, treefmt-nix, rust-overlay, crane }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
-      let
-        pkgs = import nixpkgs { inherit system; overlays = [ (import rust-overlay) ]; };
-        rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-        treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
-        craneLib = (crane.mkLib pkgs).overrideToolchain rust;
-        src = ./.;
-        cargoArtifacts = craneLib.buildDepsOnly {
-          inherit src;
-        };
-        mcl = craneLib.buildPackage {
-          inherit src cargoArtifacts;
-          strictDeps = true;
+  outputs =
+    inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = import inputs.systems;
 
-          doCheck = true;
-        };
-        cargo-clippy = craneLib.cargoClippy {
-          inherit src cargoArtifacts;
-          cargoClippyExtraArgs = "--verbose -- --deny warnings";
-        };
-        cargo-doc = craneLib.cargoDoc {
-          inherit src cargoArtifacts;
-        };
-        llvm-cov-text = craneLib.cargoLlvmCov {
-          inherit cargoArtifacts src;
-          cargoExtraArgs = "--locked";
-          cargoLlvmCovCommand = "test";
-          cargoLlvmCovExtraArgs = "--text --output-dir $out";
-        };
-        llvm-cov = craneLib.cargoLlvmCov {
-          inherit cargoArtifacts src;
-          cargoExtraArgs = "--locked";
-          cargoLlvmCovCommand = "test";
-          cargoLlvmCovExtraArgs = "--html --output-dir $out";
-        };
-      in
-      {
-        formatter = treefmtEval.config.build.wrapper;
+      imports = [
+        inputs.treefmt-nix.flakeModule
+      ];
 
-        packages = {
-          default = mcl;
-          doc = cargo-doc;
-          llvm-cov = llvm-cov;
-          llvm-cov-text = llvm-cov-text;
-        };
+      perSystem =
+        {
+          pkgs,
+          lib,
+          system,
+          ...
+        }:
+        let
+          rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+          craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rust;
+          overlays = [ inputs.rust-overlay.overlays.default ];
 
-        apps.default = flake-utils.lib.mkApp {
-          drv = self.packages.${system}.default;
-        };
-
-        checks = {
-          inherit mcl cargo-clippy cargo-doc llvm-cov llvm-cov-text;
-          formatting = treefmtEval.config.build.check self;
-        };
-
-        devShells.default = pkgs.mkShell {
-          packages = [
+          src = lib.cleanSource ./.;
+          nativeBuildInputs = [
+            # Rust
             rust
-          ];
 
-          shellHook = ''
-            export PS1="\n[nix-shell:\w]$ "
-          '';
+            # Nix
+            pkgs.nil
+          ];
+          cargoArtifacts = craneLib.buildDepsOnly {
+            inherit src nativeBuildInputs;
+          };
+          maclang = craneLib.buildPackage {
+            inherit
+              src
+              cargoArtifacts
+              
+              nativeBuildInputs
+              ;
+            strictDeps = true;
+            doCheck = true;
+
+            meta = {
+              licenses = [ lib.licenses.mit ];
+              mainProgram = "maclang";
+            };
+          };
+          cargo-clippy = craneLib.cargoClippy {
+            inherit
+              src
+              cargoArtifacts
+              
+              nativeBuildInputs
+              ;
+            cargoClippyExtraArgs = "--verbose -- --deny warnings";
+          };
+          cargo-doc = craneLib.cargoDoc {
+            inherit
+              src
+              cargoArtifacts
+              
+              nativeBuildInputs
+              ;
+          };
+        in
+        {
+          _module.args.pkgs = import inputs.nixpkgs {
+            inherit system overlays;
+          };
+
+          treefmt = {
+            projectRootFile = "flake.nix";
+
+            # Nix
+            programs.nixfmt.enable = true;
+
+            # Rust
+            programs.rustfmt.enable = true;
+            settings.formatter.rustfmt.command = "${rust}/bin/rustfmt";
+
+            # TOML
+            programs.taplo.enable = true;
+
+            # GitHub Actions
+            programs.actionlint.enable = true;
+
+            # Markdown
+            programs.mdformat.enable = true;
+
+            # ShellScript
+            programs.shellcheck.enable = true;
+            programs.shfmt.enable = true;
+          };
+
+          packages = {
+            inherit maclang;
+            default = maclang;
+            doc = cargo-doc;
+          };
+
+          checks = {
+            inherit cargo-clippy;
+          };
+
+          devShells.default = pkgs.mkShell {
+            inherit  nativeBuildInputs;
+
+            shellHook = ''
+              export PS1="\n[nix-shell:\w]$ "
+            '';
+          };
         };
-      }
-    );
+    };
 }

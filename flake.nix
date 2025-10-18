@@ -54,7 +54,6 @@
             inherit
               src
               cargoArtifacts
-              
               nativeBuildInputs
               ;
             strictDeps = true;
@@ -69,7 +68,6 @@
             inherit
               src
               cargoArtifacts
-              
               nativeBuildInputs
               ;
             cargoClippyExtraArgs = "--verbose -- --deny warnings";
@@ -78,7 +76,6 @@
             inherit
               src
               cargoArtifacts
-              
               nativeBuildInputs
               ;
           };
@@ -123,7 +120,7 @@
           };
 
           devShells.default = pkgs.mkShell {
-            inherit  nativeBuildInputs;
+            inherit nativeBuildInputs;
 
             shellHook = ''
               export PS1="\n[nix-shell:\w]$ "
